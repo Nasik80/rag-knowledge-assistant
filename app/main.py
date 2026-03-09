@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+
 from app.rag_pipeline import get_rag_chain
 
 app = FastAPI()
 
-qa_chain = get_rag_chain()
+retriever, llm = get_rag_chain()
 
 
 class QueryRequest(BaseModel):
@@ -12,11 +13,25 @@ class QueryRequest(BaseModel):
 
 
 @app.post("/ask")
-def ask_question(request: QueryRequest):
+async def ask_question(request: QueryRequest):
 
-    result = qa_chain({"query": request.question})
+    docs = retriever.invoke(request.question)
+
+    context = "\n\n".join([doc.page_content for doc in docs])
+
+    prompt = f"""
+Answer the question based on the context below.
+
+Context:
+{context}
+
+Question:
+{request.question}
+"""
+
+    response = llm.invoke(prompt)
 
     return {
-        "answer": result["result"],
-        "sources": [doc.metadata for doc in result["source_documents"]]
+        "answer": response.content,
+        "sources": [doc.metadata for doc in docs]
     }

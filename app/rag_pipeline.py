@@ -1,16 +1,14 @@
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains import RetrievalQA
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from app.config import VECTOR_DB_PATH, GEMINI_API_KEY
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 def get_rag_chain():
 
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key=GEMINI_API_KEY
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
     vectordb = Chroma(
@@ -25,10 +23,4 @@ def get_rag_chain():
         google_api_key=GEMINI_API_KEY
     )
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=retriever,
-        return_source_documents=True
-    )
-
-    return qa_chain
+    return retriever, llm
